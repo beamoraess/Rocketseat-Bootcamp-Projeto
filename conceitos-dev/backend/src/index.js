@@ -1,9 +1,11 @@
 const { request, response } = require('express');
+const cors = require('cors');
 const express = require ('express');
 const { uuid } = require('uuidv4');
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 /*
@@ -12,24 +14,40 @@ Route Params: Identificar recursos na hora de atualizar ou deletar;
 Request Body: Conteudo na hora de criar ou editar conteúdo;
 */
 
+/*
+Middleware: Interceptador de requisições que interrompe totalmente a requisição ou altera dados da requisição.
+*/
+
+
 const projects = [];
 
-app.get('/projects', (request, response ) => {
-    const { title } = request.query; // desestruturar
+function logRequests(request, response, next) /* sempre que ver um request, response, pode chamar de middleware */ {
+    const { method, url } = request;
 
-    const results = title ? projects.filter(project => project.title.includes(title)) :
-    projects;
+    const logLabel = `${method.toUpperCase()}] ${url}`
 
-    /* 
-    includes - verifica se inclui a palavra title
+    console.log(logLabel);
 
-    console.log(title);
-    console.log(owner); */
+    return next();
+}
 
+app.use(logRequests)
+
+app.get('/projects', (request, response) => {
+    const { title, owner } = request.query;
+  
+    results = title ?
+      projects.filter(project => project.title.includes(title)) :
+      projects;
+  
+    results = owner ?
+      results.filter(project => project.owner.includes(owner)) :
+      results;
+  
     return response.json(results);
-});
+  });
 
-    app.post('/projects', (request, response) => {
+app.post('/projects', (request, response) => {
         const { title, owner } = request.body;
         const project = { id: uuid(), title, owner };
 
@@ -45,7 +63,7 @@ app.get('/projects', (request, response ) => {
         ]);
     })
 
-    app.put('/projects/:id', (request, response) => {
+app.put('/projects/:id', (request, response) => {
         const { id } = request.params;
         const { title, owner } = request.body;
 
@@ -66,7 +84,7 @@ app.get('/projects', (request, response ) => {
         return response.json(project);
     })
 
-    app.delete('/projects/:id', (request, response) => {
+ app.delete('/projects/:id', (request, response) => {
         const { id } = request.params;
 
         const projectIndex = projects.findIndex(project => project.id == id);
